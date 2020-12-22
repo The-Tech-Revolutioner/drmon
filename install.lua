@@ -6,7 +6,7 @@ local libURL = "https://raw.githubusercontent.com/The-Tech-Revolutioner/drmon/ma
 local reactorURL = "https://raw.githubusercontent.com/The-Tech-Revolutioner/drmon/master/drmon.lua"
 local batURL = "https://raw.githubusercontent.com/The-Tech-Revolutioner/drmon/master/bat.lua"
 local lib, reactor, bat, libFile, reactorFile, batFile, selected, monType, flowIn, FlowOut, rSide, monitor, first, second
-local version = "1.0"
+local version = "1.0.0"
 
 fs.makeDir("lib")
 
@@ -160,8 +160,8 @@ if fs.exists("config.txt") == false then
   save_config()
 else
   load_config()
-  if version ~= "1.0" then
-    version = "1.0"
+  if version ~= "1.0.0" then
+    version = "1.0.0"
     detect()
     runMenu()
     save_config()
