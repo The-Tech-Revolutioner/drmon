@@ -11,4 +11,4 @@ currently being supported with security updates.
 
 ## Reporting a Vulnerability
 
-You can post on issues the vulnerability, preferable starting with "[Vulnerability]", so I can se that is a vulnerability issue.
+You can post on issues the vulnerability, preferable starting with "[Vulnerability]:", so I can se that is a vulnerability issue.
