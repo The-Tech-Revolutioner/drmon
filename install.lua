@@ -72,11 +72,7 @@ function detect()
       monitor = p[i]
     end
     if string.find(p[i],"flux") then
-      if string.find(first,"flux") then
-	second=p[i]
-      else
-	first=p[i]
-      end
+      first = p[i]
     end
     if p[i] == "back" or p[i] == "left" or p[i] == "right" or p[i] == "up" or p[i] == "down" then
       subp = peripheral.getMethods(p[i])
@@ -84,6 +80,8 @@ function detect()
 	for a = 1, #subp do
 	  if string.find(subp[a], "Reactor") then 
 	    rSide = p[i]
+	  elseif string.find(subp[a], "flux") then
+	    out = p[i]
 	  end
 	end
       end
@@ -125,38 +123,6 @@ local function typeMenu()
   term.write("Battery")
 end
 
-local function flowMenu()
-  local cx,cy=math.floor(width/2),math.floor(height/2)
-  width,height=term.getSize()
-  term.setBackgroundColor(colors.black)
-  term.setTextColor(bwOc(colors.red,colors.white))
-  term.clear()
-  term.setCursorPos(cx-6,cy-3)
-  term.write("Initial Setup")
-  term.setCursorPos(1,cy-1)
-  term.write("Which flux gate is the input gate?")
-
-  term.setCursorPos(3,cy+1)
-  if selected==1 then
-    term.setTextColor(bwOc(colors.blue,colors.black))
-    term.setBackgroundColor(bwOc(colors.lightGray,colors.white))
-  else
-    term.setTextColor(bwOc(colors.lightBlue,colors.white))
-    term.setBackgroundColor(colors.black)
-  end
-  term.write(first)
-
-  term.setCursorPos(3,cy+3)
-  if selected==2 then
-    term.setTextColor(bwOc(colors.blue,colors.black))
-    term.setBackgroundColor(bwOc(colors.lightGray,colors.white))
-  else
-    term.setTextColor(bwOc(colors.lightBlue,colors.white))
-    term.setBackgroundColor(colors.black)
-  end
-  term.write(second)
-end
-
 local function runMenu()
   typeMenu()
   while true do
@@ -183,32 +149,8 @@ local function runMenu()
     monType = "reactor"
   end
   if monType == "reactor" then
-    flowMenu()
-    while true do
-      local event={os.pullEvent()}
-      if event[1]=="key" then
-        local key=event[2]
-        if key==keys.up or key==keys.w then
-          selected=selected-1
-          if selected==0 then
-            selected=2
-          end
-          flowMenu()
-        elseif key==keys.down or key==keys.s then
-          selected=selected%2+1
-          flowMenu()
-        elseif key==keys.enter or key==keys.space then
-          break
-        end
-      end
-    end
-    if selected == 2 then
-      flowIn = second
-      flowOut = first
-    else
-      flowIn = first
-      flowOut = second
-    end
+    flowOut = first
+    flowIn = second
   end
 end
 
@@ -218,8 +160,8 @@ if fs.exists("config.txt") == false then
   save_config()
 else
   load_config()
-  if version ~= "4.0" then
-    version = "4.0"
+  if version ~= "1.0" then
+    version = "1.0"
     detect()
     runMenu()
     save_config()
