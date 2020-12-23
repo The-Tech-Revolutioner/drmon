@@ -1,9 +1,9 @@
-local reactorSide, igateName, ogateName, monName, oFlow, iFlow, mon, monitor, monX, monY, reactor, outflux, influx, ri, monType, modem, message
+local reactorSide, igateName, ofluxSide, monName, oFlow, iFlow, mon, monitor, monX, monY, reactor, outflux, influx, ri, monType, modem, message
 
 local targetStrength = 50
 local maxTemperature = 8000
-local safeTemperature = 3000
-local lowestFieldPercent = 15
+local safeTemperature = 7000
+local lowestFieldPercent = 25
 
 local activateOnCharged = 1
 local identify = false
@@ -11,7 +11,7 @@ local identify = false
 -- please leave things untouched from here on
 os.loadAPI("lib/f")
 
-local version = "4.0"
+local version = "1.0.0"
 -- toggleable via the monitor, use our algorithm to achieve our target field strength or let the user tweak it
 local autoInputGate = 1
 
@@ -20,6 +20,17 @@ local action = "None since reboot"
 local emergencyCharge = false
 local emergencyTemp = false
 
+monitor = f.periphSearch("monitor")
+influx = f.periphSearch("flux_gate")
+outflux = peripheral.wrap(ofluxSide)
+reactor = peripheral.wrap(reactorSide)
+
+monX, monY = monitor.getSize()
+mon = {}
+mon.monitor,mon.X, mon.Y = monitor, monX, monY
+monitor.setBackgroundColor(colors.black)
+monitor.clear()
+
 --write settings to config file
 function save_config()
   sw = fs.open("config.txt", "w")
@@ -27,7 +38,7 @@ function save_config()
   sw.writeLine(monType)
   sw.writeLine(reactorSide)
   sw.writeLine(igateName)
-  sw.writeLine(ogateName)
+  sw.writeLine(ofluxSide)
   sw.writeLine(monName)
   sw.writeLine(oFlow)
   sw.writeLine(iFlow)
@@ -42,12 +53,19 @@ function load_config()
   monType = sr.readLine()
   reactorSide = sr.readLine()
   igateName = sr.readLine()
-  ogateName = sr.readLine()
+  ofluxSide = sr.readLine()
   monName = sr.readLine()
   oFlow = tonumber(sr.readLine())
   iFlow = tonumber(sr.readLine())
   autoInputGate = tonumber(sr.readLine())
   sr.close()
+end
+
+-- 1st time? save our settings, if not, load our settings
+if fs.exists("config.txt") == false then
+  save_config()
+else
+  load_config()
 end
 
 function buttons()
@@ -103,11 +121,7 @@ function buttons()
 
     -- input gate toggle
     if yPos == 10 and ( xPos == 14 or xPos == 15) then
-      if autoInputGate == 1 then
-        autoInputGate = 0
-      else
-        autoInputGate = 1
-      end
+      autoInputGate = 1
       save_config()
     end
   end
@@ -118,13 +132,13 @@ function drawButtons(y)
   -- 2-4 = -1000, 6-9 = -10000, 10-12,8 = -100000
   -- 17-19 = +1000, 21-23 = +10000, 25-27 = +100000
 
-  f.draw_text(mon, 2, y, " < ", colors.white, colors.gray)
-  f.draw_text(mon, 6, y, " <<", colors.white, colors.gray)
+  f.draw_text(mon, 2, y, "<", colors.white, colors.gray)
+  f.draw_text(mon, 6, y, "<<", colors.white, colors.gray)
   f.draw_text(mon, 10, y, "<<<", colors.white, colors.gray)
 
   f.draw_text(mon, 17, y, ">>>", colors.white, colors.gray)
-  f.draw_text(mon, 21, y, ">> ", colors.white, colors.gray)
-  f.draw_text(mon, 25, y, " > ", colors.white, colors.gray)
+  f.draw_text(mon, 21, y, ">>", colors.white, colors.gray)
+  f.draw_text(mon, 25, y, ">", colors.white, colors.gray)
 end
 
 function pad(str, len, char)
@@ -224,9 +238,12 @@ function update()
     -- or set it to our saved setting since we are on manual
     if ri.status == "running" then
       if autoInputGate == 1 then 
-        fluxval = ri.fieldDrainRate / (1 - (targetStrength/100) )
-        print("Target Gate: ".. fluxval)
-        influx.setSignalLowFlow(fluxval)
+        if ri.fieldStrength < (targetStrength * 1000000) then
+          fluxval = ((targetStrength * 1000000) - ri.fieldStrength) + ri.fieldDrainRate * 10  -- Charge ! 
+          influx.setSignalLowFlow(fluxval)
+        else
+          influx.setSignalLowFlow(ri.fieldDrainRate - 1)
+        end
       else
         influx.setSignalLowFlow(iFlow)
       end
@@ -320,23 +337,4 @@ function wireless()
   end
 end
 
-if not pcall(load_config) then
-  save_config()
-end
-
-monitor = peripheral.wrap(monName)
-influx = peripheral.wrap(igateName)
-outflux = peripheral.wrap(ogateName)
-reactor = peripheral.wrap(reactorSide)
-
-influx.setSignalLowFlow(iFlow)
-outflux.setSignalLowFlow(oFlow)
-
-monX, monY = monitor.getSize()
-mon = {}
-mon.monitor,mon.X, mon.Y = monitor, monX, monY
-monitor.setBackgroundColor(colors.black)
-monitor.clear()
-
 parallel.waitForAll(update, buttons, wireless)
-
